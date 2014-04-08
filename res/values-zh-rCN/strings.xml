@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Apps安装器</string>
+    <string name="hello_world">你好!</string>
+    <string name="action_settings">设置</string>
+    <string name="install_app">已安装应用</string>
+    <string name="all_app">apk文件</string>
+    <string name="no_app_file">没有apk文件</string>
+    <string name="start">启动</string>
+    <string name="uninstall">卸载</string>
+    <string name="pull">导出apk</string>
+    <string name="detail">详细信息</string>
+    <string name="security_settings_desc">This app can access the following on your tablet:</string>
+    <string name="security_settings_premium_sms_desc">Send premium SMS</string>
+    <string name="security_settings_billing_desc">This app may charge you money:</string>
+    <string name="permissions_label">Permissions</string>
+    <string name="enable_compatibility">Scale app</string>
+    <string name="ask_compatibility">Ask when launched</string>
+    <string name="screen_compatibility_text">This app may not be designed for your screen. You can control how it
+            adjusts to your screen here.</string>
+    <string name="clear_activities">Clear defaults</string>
+    <string name="auto_launch_label">Launch by default</string>
+    <string name="clear_cache_btn_text">Clear cache</string>
+    <string name="cache_size_label">Cache</string>
+    <string name="cache_header_label">Cache</string>
+    <string name="external_data_size_label">USB storage data</string>
+    <string name="data_size_label">Data</string>
+    <string name="external_code_size_label">USB storage app</string>
+    <string name="application_size_label">App</string>
+    <string name="total_size_label">Total</string>
+    <string name="storage_label">Storage</string>
+    <string name="app_notifications_switch_label">Show notifications</string>
+    <string name="screen_compatibility_label">Screen compatibility</string>
+    <string name="version_text">version:</string>
+    <string name="can_not_open_apk">这个应用不能打开!</string>
+</resources>
