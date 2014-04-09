@@ -590,9 +590,16 @@ public class MainActivity extends Activity {
 			}
 			else{
 				pkgInfo = pm.getPackageArchiveInfo(lhs,PackageManager.GET_ACTIVITIES);
-				label = (String) pkgInfo.applicationInfo.loadLabel(pm);
-				lkey = collator.getCollationKey(label.toLowerCase());
-				map.put(lhs, lkey);
+				if( null == pkgInfo ){
+					Log.i("zhengwenhui", "null == pkgInfo "+lhs);
+					lkey = collator.getCollationKey(lhs.toLowerCase());
+					map.put(lhs, lkey);
+				}
+				else{
+					label = (String) pkgInfo.applicationInfo.loadLabel(pm);
+					lkey = collator.getCollationKey(label.toLowerCase());
+					map.put(lhs, lkey);
+				}
 			}
 
 			object = map.get(rhs);
@@ -601,9 +608,16 @@ public class MainActivity extends Activity {
 			}
 			else{
 				pkgInfo = pm.getPackageArchiveInfo(rhs,PackageManager.GET_ACTIVITIES);
-				label = (String) pkgInfo.applicationInfo.loadLabel(pm);
-				rkey = collator.getCollationKey(label.toLowerCase());
-				map.put(rhs, rkey);
+				if( null == pkgInfo ){
+					Log.i("zhengwenhui", "null == pkgInfo "+rhs);
+					rkey = collator.getCollationKey(rhs.toLowerCase());
+					map.put(rhs, rkey);
+				}
+				else{
+					label = (String) pkgInfo.applicationInfo.loadLabel(pm);
+					rkey = collator.getCollationKey(label.toLowerCase());
+					map.put(rhs, rkey);
+				}
 			}
 			return lkey.compareTo(rkey);
 		}
