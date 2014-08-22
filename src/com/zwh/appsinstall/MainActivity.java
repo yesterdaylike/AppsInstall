@@ -16,11 +16,14 @@ import java.util.List;
 import java.util.Map;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -38,6 +41,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.PopupMenu;
@@ -54,12 +58,25 @@ public class MainActivity extends Activity {
 	private ViewPager mPager;  
 	private ArrayList<View> mTabsView = null;  
 	private ArrayList<String> mTitles = null;
+	private ListView mRecentAppListView = null;
 	private ListView mInstalledAppListView = null;
 	private ListView mApkFileListView = null;
 	private PackageManager pm = null;
 
+	private View mLayoutDeskClock = null;
+	private DigitalClock mTime;
+	private TextView mDate;
+
+	private static final int DISPLAY_TASKS = 20;
+	private static final int MAX_TASKS = DISPLAY_TASKS + 1;
+
 	@Override  
 	protected void onCreate(Bundle savedInstanceState) {
+
+		/*int theme = getSharedPreferences("cons", MODE_PRIVATE).getInt("theme", 
+				android.R.style.Theme_Holo);
+		setTheme(theme);*/
+
 		super.onCreate(savedInstanceState);  
 		setContentView(R.layout.activity_main);  
 		//actionBar = this.getActionBar();
@@ -75,6 +92,7 @@ public class MainActivity extends Activity {
 
 		//每个页面的Title数据
 		mTitles = new ArrayList<String>();
+		mTitles.add(getString(R.string.recent_app));
 		mTitles.add(getString(R.string.install_app));
 		mTitles.add(getString(R.string.all_app));
 
@@ -82,6 +100,15 @@ public class MainActivity extends Activity {
 		pm = getPackageManager();
 		//将要分页显示的View装入数组中
 		LayoutInflater layFlater = LayoutInflater.from(this);
+
+		mLayoutDeskClock = layFlater.inflate(R.layout.desk_clock, null);
+		mTime = (DigitalClock) mLayoutDeskClock.findViewById(R.id.time);
+		mDate = (TextView) mLayoutDeskClock.findViewById(R.id.date);
+
+		View layoutRecent = layFlater.inflate(R.layout.activity_tabbar_recent, null); 
+		mRecentAppListView = (ListView) layoutRecent.findViewById(R.id.recent_listview);
+		//mInstalledAppListView.setOnItemClickListener(mInstalledAppItemClickListener);
+		//mInstalledAppListView.setOnItemLongClickListener(mInstalledAppItemLongClickListener);
 
 		View layoutInstall = layFlater.inflate(R.layout.activity_tabbar_install, null); 
 		mInstalledAppListView = (ListView) layoutInstall.findViewById(R.id.install_listview);
@@ -97,11 +124,12 @@ public class MainActivity extends Activity {
 
 		//每个页面的Title数据
 		mTabsView = new ArrayList<View>();
+		mTabsView.add(layoutRecent);
 		mTabsView.add(layoutInstall);
 		mTabsView.add(layoutAll);
 		mPager.setAdapter(MyPagerAdapter);  
 
-		mPager.setCurrentItem(0);
+		mPager.setCurrentItem(1);
 	}
 
 	OnItemLongClickListener mInstalledAppItemLongClickListener = new OnItemLongClickListener() {
@@ -319,6 +347,13 @@ public class MainActivity extends Activity {
 			((ViewPager)container).addView(mTabsView.get(position));
 			new LoadInstalledApkTask().execute();
 			new LoadApkFilesTask().execute();
+			mRecentAppListView.addHeaderView(mLayoutDeskClock);
+
+			mTime.setSystemUiVisibility(View.STATUS_BAR_VISIBLE);
+			mTime.getRootView().requestFocus();
+			
+			getRecentApps();
+
 			return mTabsView.get(position);
 		}
 
@@ -333,7 +368,7 @@ public class MainActivity extends Activity {
 		}
 	};  
 
-	public void setMyAllApps() {  
+	public void setMyAllApps() {
 		// 查找所有首先显示的activity  
 		Intent intent = new Intent(Intent.ACTION_MAIN, null);  
 		intent.addCategory(Intent.CATEGORY_LAUNCHER);  
@@ -342,6 +377,34 @@ public class MainActivity extends Activity {
 		// 按照名字排序  
 		Collections.sort(mAllApps, new ResolveInfo.DisplayNameComparator(  
 				pm));  
+	}
+
+	private List<Map<String, Object>> getRecentApps() {
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+
+		final ActivityManager am = (ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
+		final List<ActivityManager.RecentTaskInfo> recentTasks =
+				am.getRecentTasks(MAX_TASKS, ActivityManager.RECENT_IGNORE_UNAVAILABLE);
+
+		int numTasks = recentTasks.size();
+
+		for (int i = 0; i < numTasks; ++i) {
+			final ActivityManager.RecentTaskInfo recentInfo = recentTasks.get(i);
+			
+			String pasdfasfgeName = recentInfo.baseIntent.getPackage();
+			try {
+				PackageInfo p = pm.getPackageInfo(pasdfasfgeName, 0);
+				
+				Log.i("zwh", p.packageName+','+p.applicationInfo.className+','+p.applicationInfo.sourceDir);
+
+				
+			} catch (NameNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		return list;
 	}
 
 	private List<Map<String, Object>> getInstalledApps(boolean getSysPackages) {
@@ -621,5 +684,5 @@ public class MainActivity extends Activity {
 			}
 			return lkey.compareTo(rkey);
 		}
-	}
+	}  
 }

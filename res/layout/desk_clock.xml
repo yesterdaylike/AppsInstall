@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/time_date"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <com.zwh.appsinstall.DigitalClock
+        android:id="@+id/time"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/time_margin_bottom" >
+
+        <com.zwh.appsinstall.AndroidClockTextView
+            android:id="@+id/timeDisplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:gravity="left"
+            android:paddingRight="@dimen/time_margin_right"
+            android:singleLine="true"
+            android:textColor="@color/time_text_color"
+            android:textSize="@dimen/time_text_size" />
+
+        <com.zwh.appsinstall.AndroidClockTextView
+            android:id="@+id/am_pm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@id/timeDisplay"
+            android:layout_marginTop="@dimen/ampm_margin_top"
+            android:layout_toRightOf="@id/timeDisplay"
+            useClockTypeface="false"
+            android:ellipsize="none"
+            android:paddingLeft="4dip"
+            android:singleLine="true"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="@color/ampm_text_color"
+            android:textSize="@dimen/ampm_text_size" />
+    </com.zwh.appsinstall.DigitalClock>
+
+    <TextView
+        android:id="@+id/date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@color/time_text_color"
+        android:textSize="@dimen/date_text_size" />
+
+</LinearLayout>

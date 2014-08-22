@@ -4,5 +4,17 @@
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="app_icon_size">56dip</dimen>
+    <dimen name="time_text_size">92dip</dimen>
+    <dimen name="ampm_text_size">20dip</dimen>
+    <dimen name="date_text_size">15sp</dimen>
+    <dimen name="next_alarm_text_size">15sp</dimen>
+    <dimen name="time_margin_right">48dip</dimen>
+    <dimen name="time_margin_bottom">14dip</dimen>
+    <dimen name="time_margin_top">16dip</dimen>
+    <dimen name="ampm_margin_top">8dip</dimen>
+    <dimen name="font_margin_adjust">4dip</dimen>
+    <dimen name="next_alarm_margin_top">-4dip</dimen>
+    <dimen name="alarm_label_padding">8dip</dimen>
+    <dimen name="alert_dialog_title_height">64dip</dimen>
 
 </resources>
