@@ -11,6 +11,7 @@
     <string name="uninstall">uninstall</string>
     <string name="pull">pull apk file</string>
     <string name="detail">detail</string>
+    <string name="empty_apk_file">Have no apk file!</string>
     <string name="no_app_file">Apk file not found！</string>
     <string name="security_settings_desc">This app can access the following on your tablet:</string>
     <string name="security_settings_premium_sms_desc">Send premium SMS</string>

@@ -11,6 +11,7 @@
     <string name="uninstall">卸载</string>
     <string name="pull">导出apk</string>
     <string name="detail">详细信息</string>
+    <string name="empty_apk_file">没有apk文件</string>
     <string name="security_settings_desc">This app can access the following on your tablet:</string>
     <string name="security_settings_premium_sms_desc">Send premium SMS</string>
     <string name="security_settings_billing_desc">This app may charge you money:</string>

@@ -11,26 +11,31 @@ import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ResolveInfo;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -41,7 +46,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.Button;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.PopupMenu;
@@ -58,14 +63,16 @@ public class MainActivity extends Activity {
 	private ViewPager mPager;  
 	private ArrayList<View> mTabsView = null;  
 	private ArrayList<String> mTitles = null;
-	private ListView mRecentAppListView = null;
+	//private ListView mRecentAppListView = null;
 	private ListView mInstalledAppListView = null;
 	private ListView mApkFileListView = null;
-	private PackageManager pm = null;
+	private PackageManager mPackageManager = null;
 
-	private View mLayoutDeskClock = null;
+	private boolean refrest = true;
+
+	/*private View mLayoutDeskClock = null;
 	private DigitalClock mTime;
-	private TextView mDate;
+	private TextView mDate;*/
 
 	private static final int DISPLAY_TASKS = 20;
 	private static final int MAX_TASKS = DISPLAY_TASKS + 1;
@@ -78,7 +85,7 @@ public class MainActivity extends Activity {
 		setTheme(theme);*/
 
 		super.onCreate(savedInstanceState);  
-		setContentView(R.layout.activity_main);  
+		setContentView(R.layout.activity_main);
 		//actionBar = this.getActionBar();
 
 		/*actionBar.setTitle("ActionBar+ViewPager");   
@@ -92,23 +99,21 @@ public class MainActivity extends Activity {
 
 		//每个页面的Title数据
 		mTitles = new ArrayList<String>();
-		mTitles.add(getString(R.string.recent_app));
+		//mTitles.add(getString(R.string.recent_app));
 		mTitles.add(getString(R.string.install_app));
 		mTitles.add(getString(R.string.all_app));
 
 		mPager = (ViewPager)findViewById(R.id.vPager);
-		pm = getPackageManager();
+		mPackageManager = getPackageManager();
 		//将要分页显示的View装入数组中
 		LayoutInflater layFlater = LayoutInflater.from(this);
 
-		mLayoutDeskClock = layFlater.inflate(R.layout.desk_clock, null);
+		/*mLayoutDeskClock = layFlater.inflate(R.layout.desk_clock, null);
 		mTime = (DigitalClock) mLayoutDeskClock.findViewById(R.id.time);
-		mDate = (TextView) mLayoutDeskClock.findViewById(R.id.date);
+		mDate = (TextView) mLayoutDeskClock.findViewById(R.id.date);*/
 
-		View layoutRecent = layFlater.inflate(R.layout.activity_tabbar_recent, null); 
-		mRecentAppListView = (ListView) layoutRecent.findViewById(R.id.recent_listview);
-		//mInstalledAppListView.setOnItemClickListener(mInstalledAppItemClickListener);
-		//mInstalledAppListView.setOnItemLongClickListener(mInstalledAppItemLongClickListener);
+		//View layoutRecent = layFlater.inflate(R.layout.activity_tabbar_recent, null); 
+		//mRecentAppListView = (ListView) layoutRecent.findViewById(R.id.recent_listview);
 
 		View layoutInstall = layFlater.inflate(R.layout.activity_tabbar_install, null); 
 		mInstalledAppListView = (ListView) layoutInstall.findViewById(R.id.install_listview);
@@ -124,12 +129,14 @@ public class MainActivity extends Activity {
 
 		//每个页面的Title数据
 		mTabsView = new ArrayList<View>();
-		mTabsView.add(layoutRecent);
+		//mTabsView.add(layoutRecent);
 		mTabsView.add(layoutInstall);
 		mTabsView.add(layoutAll);
-		mPager.setAdapter(MyPagerAdapter);  
 
-		mPager.setCurrentItem(1);
+		mPager.setAdapter(mPagerAdapter);
+		mPager.setCurrentItem(0);
+
+		//ShowClock();
 	}
 
 	OnItemLongClickListener mInstalledAppItemLongClickListener = new OnItemLongClickListener() {
@@ -150,14 +157,14 @@ public class MainActivity extends Activity {
 					// TODO Auto-generated method stub
 					switch (item.getItemId()) {
 					case R.id.start:
-						Intent LaunchIntent = pm.getLaunchIntentForPackage(strs[0]);
-						if( null != LaunchIntent){
+						Intent LaunchIntent = mPackageManager.getLaunchIntentForPackage(strs[0]);
+						if( null != LaunchIntent && !strs[0].equals("com.zwh.appsinstall")){
 							startActivity( LaunchIntent );
 						}
-						else{
+						/*else{
 							showAppMsg(getString(R.string.can_not_open_apk), AppMsg.STYLE_INFO);
 							Log.e("Intent", "Intent is null!");
-						}
+						}*/
 						return true;
 					case R.id.uninstall:
 						Uri packageUri = Uri.parse("package:" + strs[0]);
@@ -174,6 +181,7 @@ public class MainActivity extends Activity {
 						try {
 							copyFile(src, dst);
 							showAppMsg(dstPath, AppMsg.STYLE_INFO);
+							new LoadApkFilesTask().execute();
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -280,14 +288,15 @@ public class MainActivity extends Activity {
 			String []strs = tvtag.getText().toString().split(",");
 
 			Log.e("apk", String.valueOf(tvtag.getText()));
-			Intent LaunchIntent = pm.getLaunchIntentForPackage(strs[0]);
-			if( null != LaunchIntent){
+			Intent LaunchIntent = mPackageManager.getLaunchIntentForPackage(strs[0]);
+			if( null != LaunchIntent && !strs[0].equals("com.zwh.appsinstall")){
 				startActivity( LaunchIntent );
 			}
-			else{
+
+			/*else{
 				showAppMsg("Can't open apk!", AppMsg.STYLE_INFO);
 				Log.e("Intent", "Intent is null!");
-			}
+			}*/
 		}
 	};
 
@@ -298,6 +307,9 @@ public class MainActivity extends Activity {
 				int position, long id) {
 			// TODO Auto-generated method stub
 			TextView tvtag = (TextView) view.findViewById(R.id.option);
+			if(tvtag == null){
+				return;
+			}
 			Log.e("apk", String.valueOf(tvtag.getText()));
 
 			try {
@@ -327,8 +339,9 @@ public class MainActivity extends Activity {
 	/** 
 	 * 填充ViewPager的数据适配器
 	 */  
-	private final PagerAdapter MyPagerAdapter = new PagerAdapter() {  
+	private final PagerAdapter mPagerAdapter = new PagerAdapter() {  
 		//int mCurPos = 0;
+
 		public int getCount() {
 			return mTabsView.size();
 		}  
@@ -345,14 +358,17 @@ public class MainActivity extends Activity {
 		@Override  
 		public Object instantiateItem(View container, int position) {  
 			((ViewPager)container).addView(mTabsView.get(position));
-			new LoadInstalledApkTask().execute();
-			new LoadApkFilesTask().execute();
-			mRecentAppListView.addHeaderView(mLayoutDeskClock);
 
-			mTime.setSystemUiVisibility(View.STATUS_BAR_VISIBLE);
-			mTime.getRootView().requestFocus();
-			
-			getRecentApps();
+			if (refrest) {
+				new LoadInstalledApkTask().execute();
+				new LoadApkFilesTask().execute();
+				refrest = false;
+			}
+
+			//mRecentAppListView.addHeaderView(mLayoutDeskClock);
+			/*mTime.setSystemUiVisibility(View.STATUS_BAR_VISIBLE);
+			mTime.getRootView().requestFocus();*/
+			//getRecentApps();
 
 			return mTabsView.get(position);
 		}
@@ -372,66 +388,78 @@ public class MainActivity extends Activity {
 		// 查找所有首先显示的activity  
 		Intent intent = new Intent(Intent.ACTION_MAIN, null);  
 		intent.addCategory(Intent.CATEGORY_LAUNCHER);  
-		List<ResolveInfo> mAllApps = pm.queryIntentActivities(intent, 0);  
+		List<ResolveInfo> mAllApps = mPackageManager.queryIntentActivities(intent, 0);  
 		//mAllPackages=pm.getInstalledPackages(0);  
 		// 按照名字排序  
 		Collections.sort(mAllApps, new ResolveInfo.DisplayNameComparator(  
-				pm));  
+				mPackageManager));  
 	}
 
-	private List<Map<String, Object>> getRecentApps() {
-		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
-
+	private String[] getRecentApps() {
 		final ActivityManager am = (ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
 		final List<ActivityManager.RecentTaskInfo> recentTasks =
 				am.getRecentTasks(MAX_TASKS, ActivityManager.RECENT_IGNORE_UNAVAILABLE);
+		ActivityManager.RecentTaskInfo recentInfo;
 
 		int numTasks = recentTasks.size();
+		String[] recentPackageName = new String[numTasks];
 
-		for (int i = 0; i < numTasks; ++i) {
-			final ActivityManager.RecentTaskInfo recentInfo = recentTasks.get(i);
-			
-			String pasdfasfgeName = recentInfo.baseIntent.getPackage();
-			try {
-				PackageInfo p = pm.getPackageInfo(pasdfasfgeName, 0);
-				
-				Log.i("zwh", p.packageName+','+p.applicationInfo.className+','+p.applicationInfo.sourceDir);
+		for (int i = 0; i < numTasks; i++) {
+			recentInfo = recentTasks.get(i);
+			recentPackageName[i] = recentInfo.baseIntent.getComponent().getPackageName();
+		}
+		return recentPackageName;
+	}
 
-				
-			} catch (NameNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+	private void pushRecentAppFornt(List<PackageInfo> packageInfoList){
+		//将recent app 提到前面
+		String[] recentApps = getRecentApps();
+		int length = recentApps.length;
+		PackageInfo pkInfo, temp;
+
+		for (int i = 0; i < length; i++) {
+			for (int j = 0; j < packageInfoList.size(); j++ ) {
+				pkInfo = packageInfoList.get(j);
+				if( pkInfo.packageName.equals(recentApps[i]) ){
+					temp = packageInfoList.get(i);
+					packageInfoList.set(i, pkInfo);
+					packageInfoList.set(j, temp);
+					break;
+				}
 			}
 		}
-		
-		return list;
 	}
 
 	private List<Map<String, Object>> getInstalledApps(boolean getSysPackages) {
 		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
 		Map<String, Object> map;
 
-		List<PackageInfo> packs = pm.getInstalledPackages(0);
-		Collections.sort(packs, new PackageInfoSort());
+		List<PackageInfo> packageInfoList = mPackageManager.getInstalledPackages(PackageManager.GET_ACTIVITIES);
 
-		for (PackageInfo p : packs) {
-			if ((!getSysPackages) && (p.versionName == null)) {
+		Collections.sort(packageInfoList, new PackageInfoSort()); //按字典排序
+
+		//将recent app 提到前面
+		pushRecentAppFornt(packageInfoList);
+
+		for (PackageInfo packageInfo : packageInfoList) {
+			Intent LaunchIntent = mPackageManager.getLaunchIntentForPackage(packageInfo.packageName);
+			if ( null == LaunchIntent || ( !getSysPackages && packageInfo.versionName == null ) ) {
 				continue ;
 			}
 			map = new HashMap<String, Object>();
-			map.put("icon", p.applicationInfo.loadIcon(pm));
+			map.put("icon", packageInfo.applicationInfo.loadIcon(mPackageManager));
 			//map.put("icon", p.applicationInfo.packageName+','+p.applicationInfo.className);
-			map.put("title", p.applicationInfo.loadLabel(pm));
-			map.put("summary", p.versionName);
-			map.put("tag", p.packageName+','+p.applicationInfo.className+','+p.applicationInfo.sourceDir);
+			map.put("title", packageInfo.applicationInfo.loadLabel(mPackageManager));
+			map.put("summary", packageInfo.versionName);
+			map.put("tag", packageInfo.packageName+','+packageInfo.applicationInfo.className+','+packageInfo.applicationInfo.sourceDir);
 
 			list.add(map);
 
-			if(p.applicationInfo.flags == ApplicationInfo.FLAG_SYSTEM){
+			/*if(packageInfo.applicationInfo.flags == ApplicationInfo.FLAG_SYSTEM){
 				//系统应用
 			}
 			else{
-			}
+			}*/
 		}
 		return list;
 	}
@@ -449,6 +477,7 @@ public class MainActivity extends Activity {
 				return;
 			}
 
+			mApkFileListView.setBackgroundColor(Color.WHITE);
 			SimpleAdapter installedAdapter = new SimpleAdapter(MainActivity.this,
 					list,
 					R.layout.installed_listitem,
@@ -494,8 +523,13 @@ public class MainActivity extends Activity {
 		}
 
 		protected void onPostExecute(Void result) {
-
-			if( null == list || list.size() < 1 ){
+			if( null == list || list.size() < 1 && mApkFileListView.getHeaderViewsCount()<1 ){
+				//mApkFileListView.addHeaderView(mNullHeader);
+				
+				List<String> data = new ArrayList<String>();
+				            data.add(getString(R.string.empty_apk_file));
+				mApkFileListView.setAdapter(
+						new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_expandable_list_item_1,data));
 				return;
 			}
 
@@ -526,7 +560,7 @@ public class MainActivity extends Activity {
 		PackageInfo pkgInfo;
 
 		for (String appfile : appFiles) {
-			pkgInfo = pm.getPackageArchiveInfo(appfile,PackageManager.GET_ACTIVITIES);  
+			pkgInfo = mPackageManager.getPackageArchiveInfo(appfile,PackageManager.GET_ACTIVITIES);  
 			if (pkgInfo != null) {
 				ApplicationInfo appInfo = pkgInfo.applicationInfo;
 				/* 必须加这两句，不然下面icon获取是default icon而不是应用包的icon */
@@ -537,8 +571,8 @@ public class MainActivity extends Activity {
 				String length = humanReadableByteCount(lengthInBytes, true);
 
 				map = new HashMap<String, Object>();
-				map.put("icon", appInfo.loadIcon(pm));
-				map.put("title", appInfo.loadLabel(pm));
+				map.put("icon", appInfo.loadIcon(mPackageManager));
+				map.put("title", appInfo.loadLabel(mPackageManager));
 				map.put("summary", pkgInfo.versionName+"     "+length);
 				map.put("option", appfile);
 				list.add(map);
@@ -555,8 +589,6 @@ public class MainActivity extends Activity {
 		return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
 	}
 
-	//private List<String> mAllFileArray = new ArrayList<String>();  //结果 List
-	//搜索目录，扩展名，是否进入子文件夹
 	public void getFiles(List<String> list, File Path, String Extension, boolean IsIterative){
 		File[] files = Path.listFiles();
 		if( null == files || files.length < 1 ){
@@ -617,7 +649,7 @@ public class MainActivity extends Activity {
 				lkey = (CollationKey) object;
 			}
 			else{
-				label = (String) lhs.applicationInfo.loadLabel(pm);
+				label = (String) lhs.applicationInfo.loadLabel(mPackageManager);
 				lkey = collator.getCollationKey(label.toLowerCase());
 				map.put(lhs, lkey);
 			}
@@ -627,7 +659,7 @@ public class MainActivity extends Activity {
 				rkey = (CollationKey) object;
 			}
 			else{
-				label = (String) rhs.applicationInfo.loadLabel(pm);
+				label = (String) rhs.applicationInfo.loadLabel(mPackageManager);
 				rkey = collator.getCollationKey(label.toLowerCase());
 				map.put(rhs, rkey);
 			}
@@ -652,14 +684,14 @@ public class MainActivity extends Activity {
 				lkey = (CollationKey) object;
 			}
 			else{
-				pkgInfo = pm.getPackageArchiveInfo(lhs,PackageManager.GET_ACTIVITIES);
+				pkgInfo = mPackageManager.getPackageArchiveInfo(lhs,PackageManager.GET_ACTIVITIES);
 				if( null == pkgInfo ){
 					Log.i("zhengwenhui", "null == pkgInfo "+lhs);
 					lkey = collator.getCollationKey(lhs.toLowerCase());
 					map.put(lhs, lkey);
 				}
 				else{
-					label = (String) pkgInfo.applicationInfo.loadLabel(pm);
+					label = (String) pkgInfo.applicationInfo.loadLabel(mPackageManager);
 					lkey = collator.getCollationKey(label.toLowerCase());
 					map.put(lhs, lkey);
 				}
@@ -670,14 +702,14 @@ public class MainActivity extends Activity {
 				rkey = (CollationKey) object;
 			}
 			else{
-				pkgInfo = pm.getPackageArchiveInfo(rhs,PackageManager.GET_ACTIVITIES);
+				pkgInfo = mPackageManager.getPackageArchiveInfo(rhs,PackageManager.GET_ACTIVITIES);
 				if( null == pkgInfo ){
 					Log.i("zhengwenhui", "null == pkgInfo "+rhs);
 					rkey = collator.getCollationKey(rhs.toLowerCase());
 					map.put(rhs, rkey);
 				}
 				else{
-					label = (String) pkgInfo.applicationInfo.loadLabel(pm);
+					label = (String) pkgInfo.applicationInfo.loadLabel(mPackageManager);
 					rkey = collator.getCollationKey(label.toLowerCase());
 					map.put(rhs, rkey);
 				}
@@ -685,4 +717,26 @@ public class MainActivity extends Activity {
 			return lkey.compareTo(rkey);
 		}
 	}  
+
+	@SuppressLint("DefaultLocale")
+	public void ShowClock(){
+		LayoutInflater layoutInflater = LayoutInflater.from(this); 
+		View clockView = layoutInflater.inflate(R.layout.desk_clock, null); 
+
+		String mDateFormat = getString(R.string.full_wday_month_day_no_year);
+		Date now = new Date();
+		TextView mDate = (TextView) clockView.findViewById(R.id.date);
+		mDate.setText(DateFormat.format(mDateFormat, now));
+
+		AlertDialog.Builder builder = new Builder(this);
+		builder.setView(clockView);
+
+		builder.show();
+	}
+
+	@Override
+	public void onBackPressed() {
+		// TODO Auto-generated method stub
+		super.onBackPressed();
+	}
 }
